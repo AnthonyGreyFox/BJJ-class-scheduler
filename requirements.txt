@@ -1,0 +1,13 @@
+# BJJ Scheduler Dependencies
+# This application uses only Python standard library modules
+# No external dependencies required
+
+# Core dependencies (all included in Python standard library):
+# - tkinter (GUI framework)
+# - dataclasses (data structures)
+# - enum (enumerations)
+# - datetime (date/time handling)
+# - typing (type hints)
+# - csv (CSV export)
+# - random (scheduling algorithms) 
+pytest 

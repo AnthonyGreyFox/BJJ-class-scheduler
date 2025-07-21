@@ -1,0 +1,6 @@
+# Requirements for building BJJ Scheduler executable
+pyinstaller>=5.0.0
+
+# Optional: For creating installers
+# innosetup  # Windows installer (separate download)
+# dmgbuild   # Mac DMG creation 

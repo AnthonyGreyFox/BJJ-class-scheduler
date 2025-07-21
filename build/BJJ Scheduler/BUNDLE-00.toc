@@ -1,0 +1,3 @@
+([('BJJ Scheduler',
+   '/Users/agf/Documents/bjj_scheduler/dist/BJJ Scheduler',
+   'EXECUTABLE')],)
