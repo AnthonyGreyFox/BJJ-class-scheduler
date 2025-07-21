@@ -202,3 +202,33 @@ This project is open source and available under the MIT License.
 ---
 
 **Note**: The original `bjj_scheduler.py` file is kept for reference and can still be used if you prefer the single-file approach. The modular version provides the same functionality with better organization and maintainability.
+
+## Non-Technical User Guide: Downloading and Installing the App
+
+### 1. Download the App
+- Go to the [Releases](https://github.com/AnthonyGreyFox/BJJ-class-scheduler/releases) page of the project.
+- Download the latest `.dmg` (Mac) or `.zip` file under the latest release.
+
+### 2. Install on Mac
+- If you downloaded a `.dmg` file:
+  1. Double-click the `.dmg` to open it.
+  2. Drag the `BJJ Scheduler` app to your `Applications` folder.
+  3. Eject the disk image.
+- If you downloaded a `.zip` file:
+  1. Double-click the `.zip` to unzip it.
+  2. Move the `BJJ Scheduler` app to your `Applications` folder (optional).
+
+### 3. Open the App
+- Double-click `BJJ Scheduler` to launch.
+- The first time you open it, you may see a security warning:
+  - If you see "App can’t be opened because it is from an unidentified developer":
+    1. Right-click the app and choose `Open`.
+    2. Click `Open` in the dialog that appears.
+  - Or, go to `System Preferences` > `Security & Privacy` > `General` and click `Open Anyway`.
+
+### 4. Using the App
+- Follow the on-screen instructions to set up your coaches, classes, and time slots.
+- Use the `Generate Schedule` button to create your class schedule.
+- You can export your schedule to CSV or iCalendar, and save/load your settings.
+
+If you have any issues, please contact the developer or check the documentation for troubleshooting tips.
