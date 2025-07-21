@@ -71,7 +71,9 @@ bjj_scheduler/
 - Set up your coaches, classes, and time slots using the intuitive interface.
 - Use `Manual Assignment` to fix classes to specific slots if needed.
 - Click `Generate Schedule` to create your class schedule.
+- Balanced mode attempts to provide a balance of class types in each time slot, while sequential mode tries to schedule classes of the same type together.
 - Export your schedule to CSV or iCalendar, and save/load your settings as needed.
+
 
 If you have any issues, please contact the developer or check the documentation for troubleshooting tips.
 
