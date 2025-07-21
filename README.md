@@ -201,4 +201,4 @@ This project is open source and available under the MIT License.
 
 ---
 
-**Note**: The original `bjj_scheduler.py` file is kept for reference and can still be used if you prefer the single-file approach. The modular version provides the same functionality with better organization and maintainability. 
+**Note**: The original `bjj_scheduler.py` file is kept for reference and can still be used if you prefer the single-file approach. The modular version provides the same functionality with better organization and maintainability.
