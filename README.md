@@ -2,6 +2,44 @@
 
 A modern, user-friendly app for scheduling Brazilian Jiu-Jitsu classes, coaches, and time slots. Supports manual class assignment, export to CSV/iCal, and saving/loading your gym's configuration.
 
+## Project Structure
+
+```
+bjj_scheduler/
+├── README.md
+├── .gitignore
+├── requirements.txt
+├── build_executable.py
+├── main.py
+├── bjj_scheduler.py
+├── src/
+│   ├── __init__.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── scheduler.py
+│   │   ├── data_classes.py
+│   │   └── enums.py
+│   ├── gui/
+│   │   ├── __init__.py
+│   │   ├── main_window.py
+│   │   ├── dialogs/
+│   │   │   ├── __init__.py
+│   │   │   ├── base_dialog.py
+│   │   │   ├── coach_dialogs.py
+│   │   │   ├── class_dialogs.py
+│   │   │   └── time_slot_dialogs.py
+│   │   └── widgets/
+│   │       └── __init__.py
+│   └── utils/
+│       ├── __init__.py
+│       └── export.py
+├── tests/
+│   ├── conftest.py
+│   ├── test_config.py
+│   ├── test_export.py
+│   └── test_scheduler.py
+```
+
 ## Features
 - Easy management of coaches, classes, and time slots
 - Manual assignment of fixed classes to specific slots
