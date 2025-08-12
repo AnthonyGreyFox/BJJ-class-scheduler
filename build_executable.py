@@ -17,6 +17,33 @@ def install_pyinstaller():
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pyinstaller"])
         print("PyInstaller installed successfully")
 
+def sign_executable_mac(executable_path):
+    """Sign the executable on macOS using codesign"""
+    import getpass
+    cert_name = os.environ.get("BJJ_CODESIGN_ID")
+    if not cert_name:
+        print("\n🔒 Code signing required for macOS.")
+        print("You need a 'Developer ID Application' certificate in your Keychain.")
+        cert_name = input("Enter your Developer ID Application certificate name (or paste, e.g. 'Developer ID Application: Your Name (TEAMID)'): ").strip()
+    if not cert_name:
+        print("❌ No certificate name provided. Skipping code signing.")
+        return False
+    codesign_cmd = [
+        "codesign", "--deep", "--force", "--verify", "--verbose",
+        "--sign", cert_name, executable_path
+    ]
+    try:
+        subprocess.check_call(codesign_cmd)
+        print(f"\n✅ Code signing successful for: {executable_path}")
+        # Verify signature
+        verify_cmd = ["codesign", "--verify", "--verbose=2", executable_path]
+        subprocess.check_call(verify_cmd)
+        print("🔍 Signature verified.")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Code signing failed: {e}")
+        return False
+
 def build_executable():
     """Build the standalone executable"""
     print("Building BJJ Scheduler executable...")
@@ -48,6 +75,13 @@ def build_executable():
         subprocess.check_call(cmd)
         print("\n✅ Build successful!")
         print("📁 Executable created in: dist/BJJ Scheduler")
+        # macOS code signing step
+        if sys.platform == "darwin":
+            exe_path = "dist/BJJ Scheduler"
+            if os.path.exists(exe_path):
+                sign_executable_mac(exe_path)
+            else:
+                print(f"❌ Expected executable not found at {exe_path}, skipping code signing.")
         print("\n📋 Next steps:")
         print("1. Test the executable: dist/BJJ Scheduler")
         print("2. Share the executable file with users")

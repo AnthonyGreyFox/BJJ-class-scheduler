@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ action }} Class Type - BJJ Scheduler Web</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container py-5">
+        <h2 class="mb-4">{{ action }} Class Type</h2>
+        <form method="post">
+            <div class="mb-3">
+                <label for="name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="name" name="name" required value="{{ class_type_obj.name if class_type_obj else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="class_type" class="form-label">Type</label>
+                <select class="form-select" id="class_type" name="class_type" required>
+                    {% set types = ['gi', 'no-gi', 'open-mat'] %}
+                    {% for t in types %}
+                    <option value="{{ t }}" {% if class_type_obj and class_type_obj.class_type.value == t %}selected{% endif %}>{{ t.title() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="duration_minutes" class="form-label">Duration (minutes)</label>
+                <input type="number" class="form-control" id="duration_minutes" name="duration_minutes" min="1" required value="{{ class_type_obj.duration_minutes if class_type_obj else 60 }}">
+            </div>
+            <div class="mb-3">
+                <label for="weekly_count" class="form-label">Weekly Count</label>
+                <input type="number" class="form-control" id="weekly_count" name="weekly_count" min="0" required value="{{ class_type_obj.weekly_count if class_type_obj else 0 }}">
+            </div>
+            <button type="submit" class="btn btn-primary">{{ action }} Class Type</button>
+            <a href="{{ url_for('class_types') }}" class="btn btn-secondary ms-2">Cancel</a>
+        </form>
+    </div>
+</body>
+</html> 

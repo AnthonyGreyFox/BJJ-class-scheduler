@@ -178,40 +178,93 @@ class BJJScheduler:
         candidates.sort(key=lambda x: (x[2], -x[3]))
         return candidates[0][0], candidates[0][1]
         
-    def generate_schedule(self) -> Tuple[List[ScheduledClass], List[str]]:
-        """Generate a schedule based on requirements"""
-        schedule = self.fixed_classes.copy()
+    def generate_schedule(self, manual_assignments=None) -> Tuple[List[ScheduledClass], List[str]]:
+        """Generate a schedule with manual assignments and slot preferences"""
+        schedule = []
         conflicts = []
-        
-        # Get available time slots (excluding fixed classes)
-        available_slots = []
-        for time_slot in self.time_slots:
-            # Check if this slot is already taken by a fixed class
-            slot_taken = any(fc.time_slot == time_slot for fc in self.fixed_classes)
-            if not slot_taken:
-                available_slots.append(time_slot)
-        
-        # Create list of classes to schedule based on weekly_count in class_definitions
-        classes_to_schedule = []
+        manual_assignments = manual_assignments or []
+        # 1. Place manual assignments first
+        used_slots = set()
+        used_classes = set()
+        for ma in manual_assignments:
+            # ma: dict with keys: class_def, time_slot, coach
+            sc = ScheduledClass(ma['class_def'], ma['time_slot'], ma['coach'], is_fixed=True)
+            schedule.append(sc)
+            used_slots.add(ma['time_slot'])
+            used_classes.add(ma['class_def'])
+        # 2. Prepare slots by preference
+        slots_by_pref = {'gi': [], 'no-gi': [], 'open-mat': [], None: []}
+        for slot in self.time_slots:
+            if slot in used_slots:
+                continue
+            pref = slot.primary_preference if slot.primary_preference else None
+            slots_by_pref.setdefault(pref, []).append(slot)
+        # 3. Prepare classes by type (excluding manual assignments)
+        classes_by_type = {'gi': [], 'no-gi': [], 'open-mat': []}
         for class_def in self.class_definitions:
+            if class_def in used_classes:
+                continue
             for _ in range(class_def.weekly_count):
-                classes_to_schedule.append(class_def)
-        classes_to_schedule = self._sort_classes_for_scheduling(classes_to_schedule)
-        
-        # Schedule each class
-        for class_def in classes_to_schedule:
-            result = self._find_best_slot_for_class(class_def, available_slots, schedule)
-            
-            if result:
-                time_slot, coach = result
-                # Calculate position within the slot
-                slot_position = self._get_class_count_in_slot(time_slot, schedule)
-                scheduled_class = ScheduledClass(class_def, time_slot, coach, slot_position=slot_position)
-                schedule.append(scheduled_class)
-                # Don't remove the slot - it can still fit more classes
-            else:
-                conflicts.append(f"Could not schedule {class_def}")
-                
+                classes_by_type[class_def.class_type.value].append(class_def)
+        # 4. Distribute classes to preferred slots
+        def assign_classes_to_slots(class_type, slots):
+            assigned = set()
+            slot_idx = 0
+            for class_def in classes_by_type[class_type]:
+                # Find a slot with enough space and a coach
+                for _ in range(len(slots)):
+                    slot = slots[slot_idx % len(slots)]
+                    # Find a coach
+                    for coach in self.coaches:
+                        if self._can_coach_teach_class(coach, class_def, slot) and self._get_coach_current_load(coach, schedule) < coach.max_weekly_classes:
+                            # Check available time
+                            if self._get_available_time_in_slot(slot, schedule) >= class_def.duration_minutes:
+                                sc = ScheduledClass(class_def, slot, coach)
+                                schedule.append(sc)
+                                assigned.add(class_def)
+                                break
+                    slot_idx += 1
+                    if class_def in assigned:
+                        break
+            # Remove assigned classes
+            classes_by_type[class_type] = [c for c in classes_by_type[class_type] if c not in assigned]
+        # Assign by primary preference
+        for ct in ['gi', 'no-gi', 'open-mat']:
+            assign_classes_to_slots(ct, slots_by_pref.get(ct, []))
+        # Assign by secondary preference
+        for slot in self.time_slots:
+            if slot in used_slots:
+                continue
+            sec = slot.secondary_preference
+            if sec and sec in classes_by_type:
+                assign_classes_to_slots(sec, [slot])
+        # Assign remaining classes to no-preference slots
+        for ct in ['gi', 'no-gi', 'open-mat']:
+            assign_classes_to_slots(ct, slots_by_pref.get(None, []))
+        # 5. Fill any remaining space in any slot
+        for ct in ['gi', 'no-gi', 'open-mat']:
+            for slot in self.time_slots:
+                if slot in used_slots:
+                    continue
+                assign_classes_to_slots(ct, [slot])
+        # 6. Report unfilled slots
+        for slot in self.time_slots:
+            if self._get_available_time_in_slot(slot, schedule) > 0:
+                conflicts.append(f"Could not fill all time in slot {slot}")
+        # 7. Report unassigned classes
+        for ct, clist in classes_by_type.items():
+            if clist:
+                conflicts.append(f"Unassigned {ct} classes: {len(clist)}")
+        # 8. Assign slot_position for each class in a slot
+        from collections import defaultdict
+        slot_groups = defaultdict(list)
+        for sc in schedule:
+            slot_groups[sc.time_slot].append(sc)
+        for slot, sc_list in slot_groups.items():
+            # Sort by class_def name for determinism, or keep as is for order of assignment
+            sc_list.sort(key=lambda sc: sc.class_def.name)
+            for i, sc in enumerate(sc_list):
+                sc.slot_position = i
         return schedule, conflicts
         
     def print_schedule(self, schedule: List[ScheduledClass]):
@@ -320,7 +373,13 @@ class BJJScheduler:
         return {
             "coaches": [vars(c) for c in self.coaches],
             "time_slots": [
-                {"day": ts.day, "start_time": ts.start_time.strftime("%H:%M"), "end_time": ts.end_time.strftime("%H:%M")} for ts in self.time_slots
+                {
+                    "day": ts.day,
+                    "start_time": ts.start_time.strftime("%H:%M"),
+                    "end_time": ts.end_time.strftime("%H:%M"),
+                    "primary_preference": ts.primary_preference,
+                    "secondary_preference": ts.secondary_preference
+                } for ts in self.time_slots
             ],
             "class_definitions": [
                 {"name": cd.name, "class_type": cd.class_type.value, "duration_minutes": cd.duration_minutes, "weekly_count": cd.weekly_count} for cd in self.class_definitions
@@ -331,7 +390,15 @@ class BJJScheduler:
         from .enums import ClassType
         from datetime import time
         self.coaches = [Coach(**c) for c in data.get("coaches", [])]
-        self.time_slots = [TimeSlot(day=ts["day"], start_time=time.fromisoformat(ts["start_time"]), end_time=time.fromisoformat(ts["end_time"])) for ts in data.get("time_slots", [])]
+        self.time_slots = [
+            TimeSlot(
+                day=ts["day"],
+                start_time=time.fromisoformat(ts["start_time"]),
+                end_time=time.fromisoformat(ts["end_time"]),
+                primary_preference=ts.get("primary_preference"),
+                secondary_preference=ts.get("secondary_preference")
+            ) for ts in data.get("time_slots", [])
+        ]
         self.class_definitions = [
             ClassDefinition(
                 name=cd["name"],

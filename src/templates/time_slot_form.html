@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ action }} Time Slot - BJJ Scheduler Web</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container py-5">
+        <h2 class="mb-4">{{ action }} Time Slot</h2>
+        <form method="post">
+            <div class="mb-3">
+                <label for="day" class="form-label">Day</label>
+                <select class="form-select" id="day" name="day" required>
+                    {% set days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] %}
+                    {% for d in days %}
+                    <option value="{{ d }}" {% if time_slot and time_slot.day == d %}selected{% endif %}>{{ d.title() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Start Time</label>
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <input type="number" class="form-control" name="start_hour" min="0" max="23" required placeholder="Hour" value="{{ time_slot.start_time.hour if time_slot else 19 }}">
+                    </div>
+                    <div class="col-auto">
+                        <input type="number" class="form-control" name="start_minute" min="0" max="59" required placeholder="Minute" value="{{ time_slot.start_time.minute if time_slot else 0 }}">
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">End Time</label>
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <input type="number" class="form-control" name="end_hour" min="0" max="23" required placeholder="Hour" value="{{ time_slot.end_time.hour if time_slot else 20 }}">
+                    </div>
+                    <div class="col-auto">
+                        <input type="number" class="form-control" name="end_minute" min="0" max="59" required placeholder="Minute" value="{{ time_slot.end_time.minute if time_slot else 0 }}">
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="primary_preference" class="form-label">Primary Class Type Preference</label>
+                <select class="form-select" id="primary_preference" name="primary_preference">
+                    {% for t in class_types %}
+                    <option value="{{ t }}" {% if time_slot and time_slot.primary_preference == t %}selected{% endif %}>{{ t.title() if t != 'none' else 'No Preference' }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="secondary_preference" class="form-label">Secondary Class Type Preference</label>
+                <select class="form-select" id="secondary_preference" name="secondary_preference">
+                    {% for t in class_types %}
+                    <option value="{{ t }}" {% if time_slot and time_slot.secondary_preference == t %}selected{% endif %}>{{ t.title() if t != 'none' else 'No Preference' }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">{{ action }} Time Slot</button>
+            <a href="{{ url_for('time_slots') }}" class="btn btn-secondary ms-2">Cancel</a>
+        </form>
+    </div>
+</body>
+</html> 

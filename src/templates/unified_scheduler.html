@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BJJ Scheduler - Unified</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      .modal-lg-custom { max-width: 50vw; }
+    </style>
+</head>
+<body>
+<div class="container py-4">
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#coachesModal">Manage Coaches</button>
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#slotsModal">Manage Time Slots</button>
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#classesModal">Manage Class Types</button>
+        <a href="/settings/download" class="btn btn-outline-success">Save Settings</a>
+        <form action="/settings/upload" method="post" enctype="multipart/form-data" class="d-inline">
+            <label class="btn btn-outline-warning mb-0">
+                Upload Settings <input type="file" name="settings_file" accept="application/json" hidden onchange="this.form.submit()">
+            </label>
+        </form>
+    </div>
+    <!-- Modals (stubs) -->
+    <div class="modal fade" id="coachesModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-lg-custom">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Manage Coaches</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <h6>Current Coaches</h6>
+            <ul class="list-group mb-3">
+              {% for coach in coaches %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                  <strong>{{ coach.name }}</strong> ({{ coach.max_weekly_classes }} classes/wk)
+                  <br>
+                  <small>Pref: {{ coach.preferred_times|join(', ') }} | Days: {{ coach.available_days|join(', ') }} | Can teach: {% if coach.can_teach_gi %}Gi {% endif %}{% if coach.can_teach_nogi %}No-Gi {% endif %}{% if coach.can_teach_open_mat %}Open Mat{% endif %}</small>
+                </span>
+                <span>
+                  <form method="post" class="d-inline">
+                    <input type="hidden" name="coach_edit_idx" value="{{ loop.index0 }}">
+                    <button type="submit" name="start_edit_coach" class="btn btn-sm btn-outline-primary">Edit</button>
+                  </form>
+                  <form method="post" class="d-inline ms-1">
+                    <input type="hidden" name="coach_delete_idx" value="{{ loop.index0 }}">
+                    <button type="submit" name="delete_coach" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this coach?');">Delete</button>
+                  </form>
+                </span>
+              </li>
+              {% else %}
+              <li class="list-group-item text-center">No coaches found.</li>
+              {% endfor %}
+            </ul>
+            <hr>
+            <h6>{% if coach_edit_data %}Edit Coach{% else %}Add Coach{% endif %}</h6>
+            <form method="post">
+              {% if coach_edit_data %}
+                <input type="hidden" name="coach_edit_idx" value="{{ coach_edit_idx }}">
+              {% endif %}
+              <div class="mb-2">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-control" name="coach_name" required value="{{ coach_edit_data.name if coach_edit_data else '' }}">
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Max Weekly Classes</label>
+                <input type="number" class="form-control" name="coach_max_weekly_classes" min="1" required value="{{ coach_edit_data.max_weekly_classes if coach_edit_data else 5 }}">
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Preferred Times</label><br>
+                {% set times = ['morning', 'afternoon', 'evening'] %}
+                {% for t in times %}
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" name="coach_preferred_times" value="{{ t }}" {% if coach_edit_data and t in coach_edit_data.preferred_times %}checked{% endif %}>
+                  <label class="form-check-label">{{ t.title() }}</label>
+                </div>
+                {% endfor %}
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Available Days</label><br>
+                {% set days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] %}
+                {% for d in days %}
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" name="coach_available_days" value="{{ d }}" {% if coach_edit_data and d in coach_edit_data.available_days %}checked{% endif %}>
+                  <label class="form-check-label">{{ d.title() }}</label>
+                </div>
+                {% endfor %}
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Can Teach</label><br>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" name="coach_can_teach_gi" {% if coach_edit_data is none or coach_edit_data.can_teach_gi %}checked{% endif %}>
+                  <label class="form-check-label">Gi</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" name="coach_can_teach_nogi" {% if coach_edit_data is none or coach_edit_data.can_teach_nogi %}checked{% endif %}>
+                  <label class="form-check-label">No-Gi</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" name="coach_can_teach_open_mat" {% if coach_edit_data is none or coach_edit_data.can_teach_open_mat %}checked{% endif %}>
+                  <label class="form-check-label">Open Mat</label>
+                </div>
+              </div>
+              <div class="mb-2">
+                {% if coach_edit_data %}
+                  <button type="submit" name="edit_coach" class="btn btn-primary">Save</button>
+                {% else %}
+                  <button type="submit" name="add_coach" class="btn btn-success">Add Coach</button>
+                {% endif %}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="slotsModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-lg-custom">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Manage Time Slots</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <h6>Current Time Slots</h6>
+            <ul class="list-group mb-3">
+              {% for slot in time_slots %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                  <strong>{{ slot.day.title() }}</strong> {{ slot.start_time.strftime('%H:%M') }}-{{ slot.end_time.strftime('%H:%M') }}
+                  <br>
+                  <small>Primary: {{ slot.primary_preference or 'None' }}, Secondary: {{ slot.secondary_preference or 'None' }}</small>
+                </span>
+                <span>
+                  <form method="post" class="d-inline">
+                    <input type="hidden" name="slot_edit_idx" value="{{ loop.index0 }}">
+                    <button type="submit" name="start_edit_slot" class="btn btn-sm btn-outline-primary">Edit</button>
+                  </form>
+                  <form method="post" class="d-inline ms-1">
+                    <input type="hidden" name="slot_delete_idx" value="{{ loop.index0 }}">
+                    <button type="submit" name="delete_slot" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this slot?');">Delete</button>
+                  </form>
+                </span>
+              </li>
+              {% else %}
+              <li class="list-group-item text-center">No time slots found.</li>
+              {% endfor %}
+            </ul>
+            <hr>
+            <h6>{% if slot_edit_data %}Edit Time Slot{% else %}Add Time Slot{% endif %}</h6>
+            <form method="post">
+              {% if slot_edit_data %}
+                <input type="hidden" name="slot_edit_idx" value="{{ slot_edit_idx }}">
+              {% endif %}
+              <div class="mb-2">
+                <label class="form-label">Day</label>
+                <select class="form-select" name="slot_day" required>
+                  {% set days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] %}
+                  {% for d in days %}
+                  <option value="{{ d }}" {% if slot_edit_data and slot_edit_data.day == d %}selected{% endif %}>{{ d.title() }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Start Time</label>
+                <div class="row g-2">
+                  <div class="col-auto">
+                    <input type="number" class="form-control" name="slot_start_hour" min="0" max="23" required placeholder="Hour" value="{{ slot_edit_data.start_time.hour if slot_edit_data else 19 }}">
+                  </div>
+                  <div class="col-auto">
+                    <input type="number" class="form-control" name="slot_start_minute" min="0" max="59" required placeholder="Minute" value="{{ slot_edit_data.start_time.minute if slot_edit_data else 0 }}">
+                  </div>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">End Time</label>
+                <div class="row g-2">
+                  <div class="col-auto">
+                    <input type="number" class="form-control" name="slot_end_hour" min="0" max="23" required placeholder="Hour" value="{{ slot_edit_data.end_time.hour if slot_edit_data else 20 }}">
+                  </div>
+                  <div class="col-auto">
+                    <input type="number" class="form-control" name="slot_end_minute" min="0" max="59" required placeholder="Minute" value="{{ slot_edit_data.end_time.minute if slot_edit_data else 0 }}">
+                  </div>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Primary Class Type Preference</label>
+                <select class="form-select" name="slot_primary_preference">
+                  {% set types = ['none', 'gi', 'no-gi', 'open-mat'] %}
+                  {% for t in types %}
+                  <option value="{{ t }}" {% if slot_edit_data and (slot_edit_data.primary_preference or 'none') == t %}selected{% endif %}>{{ t.title() if t != 'none' else 'No Preference' }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Secondary Class Type Preference</label>
+                <select class="form-select" name="slot_secondary_preference">
+                  {% for t in types %}
+                  <option value="{{ t }}" {% if slot_edit_data and (slot_edit_data.secondary_preference or 'none') == t %}selected{% endif %}>{{ t.title() if t != 'none' else 'No Preference' }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-2">
+                {% if slot_edit_data %}
+                  <button type="submit" name="edit_slot" class="btn btn-primary">Save</button>
+                {% else %}
+                  <button type="submit" name="add_slot" class="btn btn-success">Add Slot</button>
+                {% endif %}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="classesModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-lg-custom">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Manage Class Types</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <h6>Current Class Types</h6>
+            <ul class="list-group mb-3">
+              {% for ct in class_types %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                  <strong>{{ ct.name }}</strong> ({{ ct.class_type.value|title }}, {{ ct.duration_minutes }} min, {{ ct.weekly_count }} per week)
+                </span>
+                <span>
+                  <form method="post" class="d-inline">
+                    <input type="hidden" name="class_type_edit_idx" value="{{ loop.index0 }}">
+                    <button type="submit" name="start_edit_class_type" class="btn btn-sm btn-outline-primary">Edit</button>
+                  </form>
+                  <form method="post" class="d-inline ms-1">
+                    <input type="hidden" name="class_type_delete_idx" value="{{ loop.index0 }}">
+                    <button type="submit" name="delete_class_type" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this class type?');">Delete</button>
+                  </form>
+                </span>
+              </li>
+              {% else %}
+              <li class="list-group-item text-center">No class types found.</li>
+              {% endfor %}
+            </ul>
+            <hr>
+            <h6>{% if class_edit_data %}Edit Class Type{% else %}Add Class Type{% endif %}</h6>
+            <form method="post">
+              {% if class_edit_data %}
+                <input type="hidden" name="class_type_edit_idx" value="{{ class_edit_idx }}">
+              {% endif %}
+              <div class="mb-2">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-control" name="class_type_name" required value="{{ class_edit_data.name if class_edit_data else '' }}">
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Type</label>
+                <select class="form-select" name="class_type_type" required>
+                  {% set types = ['gi', 'no-gi', 'open-mat'] %}
+                  {% for t in types %}
+                  <option value="{{ t }}" {% if class_edit_data and class_edit_data.class_type.value == t %}selected{% endif %}>{{ t.title() }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Duration (minutes)</label>
+                <input type="number" class="form-control" name="class_type_duration" min="1" required value="{{ class_edit_data.duration_minutes if class_edit_data else 60 }}">
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Weekly Count</label>
+                <input type="number" class="form-control" name="class_type_weekly_count" min="0" required value="{{ class_edit_data.weekly_count if class_edit_data else 0 }}">
+              </div>
+              <div class="mb-2">
+                {% if class_edit_data %}
+                  <button type="submit" name="edit_class_type" class="btn btn-primary">Save</button>
+                {% else %}
+                  <button type="submit" name="add_class_type" class="btn btn-success">Add Class Type</button>
+                {% endif %}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Manual Assignment Section -->
+    <div class="card mb-4">
+        <div class="card-header">Manual Assignment</div>
+        <div class="card-body">
+            <form method="post" class="row g-2 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label">Class</label>
+                    <select class="form-select" name="manual_class">
+                        {% for c in class_options %}
+                        <option value="{{ loop.index0 }}">{{ c.name }} ({{ c.class_type.value|title }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">Coach</label>
+                    <select class="form-select" name="manual_coach">
+                        {% for c in coach_options %}
+                        <option value="{{ loop.index0 }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">Time Slot</label>
+                    <select class="form-select" name="manual_slot">
+                        {% for s in slot_options %}
+                        <option value="{{ loop.index0 }}">{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" name="add_manual" class="btn btn-outline-primary">Add Manual Assignment</button>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" name="clear_manual" class="btn btn-outline-danger">Clear Manual Assignments</button>
+                </div>
+            </form>
+            {% if manual_assignments and manual_assignments|length > 0 %}
+            <div class="mt-3">
+                <strong>Manual Assignments:</strong>
+                <ul>
+                    {% for ma in manual_assignments %}
+                    <li>{{ ma.class_name }} ({{ ma.class_type|title }}) with {{ ma.coach_name }} in {{ slot_options[ma.slot_idx] }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Schedule Generation Section -->
+    <div class="card mb-4">
+        <div class="card-header">Schedule Generation</div>
+        <div class="card-body">
+            <form method="post">
+                <button type="submit" name="generate_schedule" class="btn btn-primary mb-3">Generate Schedule</button>
+            </form>
+            {% if schedule %}
+            <div class="mb-3">
+                <a href="/schedule/export/ical" class="btn btn-success me-2">Export as iCalendar (.ics)</a>
+                <a href="/schedule/export/csv" class="btn btn-secondary">Export as CSV</a>
+            </div>
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Class</th>
+                        <th>Type</th>
+                        <th>Duration</th>
+                        <th>Coach</th>
+                        <th>Fixed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sc in schedule %}
+                    <tr>
+                        <td>{{ sc.day.title() }}</td>
+                        <td>{{ sc.start_time }}</td>
+                        <td>{{ sc.end_time }}</td>
+                        <td>{{ sc.class_name }}</td>
+                        <td>{{ sc.class_type|title }}</td>
+                        <td>{{ sc.duration }} min</td>
+                        <td>{{ sc.coach }}</td>
+                        <td>{% if sc.is_fixed %}<span class="badge bg-warning text-dark">Yes</span>{% endif %}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-center">No classes scheduled.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+            {% if conflicts and conflicts|length > 0 %}
+            <div class="alert alert-warning mt-4">
+                <strong>Conflicts/Warnings:</strong>
+                <ul>
+                    {% for c in conflicts %}
+                    <li>{{ c }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Remove the Back to Home button -->
+    <!-- <a href="/" class="btn btn-secondary mt-3">Back to Home</a> -->
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Auto-open modal if editing
+  document.addEventListener('DOMContentLoaded', function() {
+    {% if coach_edit_data %}
+      var modal = new bootstrap.Modal(document.getElementById('coachesModal'));
+      modal.show();
+    {% elif slot_edit_data %}
+      var modal = new bootstrap.Modal(document.getElementById('slotsModal'));
+      modal.show();
+    {% elif class_edit_data %}
+      var modal = new bootstrap.Modal(document.getElementById('classesModal'));
+      modal.show();
+    {% endif %}
+  });
+</script>
+</body>
+</html> 

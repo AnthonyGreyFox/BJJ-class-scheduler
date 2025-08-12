@@ -11,3 +11,6 @@
 # - csv (CSV export)
 # - random (scheduling algorithms) 
 pytest 
+Flask>=2.0
+flask-session>=0.4
+# Bootstrap is included via CDN in templates, so no pip package needed 

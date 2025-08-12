@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ action }} Coach - BJJ Scheduler Web</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container py-5">
+        <h2 class="mb-4">{{ action }} Coach</h2>
+        <form method="post">
+            <div class="mb-3">
+                <label for="name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="name" name="name" required value="{{ coach.name if coach else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="max_weekly_classes" class="form-label">Max Weekly Classes</label>
+                <input type="number" class="form-control" id="max_weekly_classes" name="max_weekly_classes" min="1" required value="{{ coach.max_weekly_classes if coach else 5 }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Preferred Times</label><br>
+                {% set times = ['morning', 'afternoon', 'evening'] %}
+                {% for t in times %}
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" name="preferred_times" id="pt_{{ t }}" value="{{ t }}" {% if coach and t in coach.preferred_times %}checked{% endif %}>
+                    <label class="form-check-label" for="pt_{{ t }}">{{ t.title() }}</label>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Available Days</label><br>
+                {% set days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] %}
+                {% for d in days %}
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" name="available_days" id="day_{{ d }}" value="{{ d }}" {% if coach and d in coach.available_days %}checked{% endif %}>
+                    <label class="form-check-label" for="day_{{ d }}">{{ d.title() }}</label>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Can Teach</label><br>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" name="can_teach_gi" id="can_teach_gi" {% if coach is none or coach.can_teach_gi %}checked{% endif %}>
+                    <label class="form-check-label" for="can_teach_gi">Gi</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" name="can_teach_nogi" id="can_teach_nogi" {% if coach is none or coach.can_teach_nogi %}checked{% endif %}>
+                    <label class="form-check-label" for="can_teach_nogi">No-Gi</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" name="can_teach_open_mat" id="can_teach_open_mat" {% if coach is none or coach.can_teach_open_mat %}checked{% endif %}>
+                    <label class="form-check-label" for="can_teach_open_mat">Open Mat</label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">{{ action }} Coach</button>
+            <a href="{{ url_for('coaches') }}" class="btn btn-secondary ms-2">Cancel</a>
+        </form>
+    </div>
+</body>
+</html> 

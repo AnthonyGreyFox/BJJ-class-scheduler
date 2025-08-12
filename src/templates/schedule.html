@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule - BJJ Scheduler Web</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container py-5">
+        <h2 class="mb-4">Generate/View Schedule</h2>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="alert alert-info">{{ messages[0] }}</div>
+          {% endif %}
+        {% endwith %}
+        <form method="post" class="mb-4">
+            <div class="row g-2 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label">Class</label>
+                    <select class="form-select" name="manual_class">
+                        {% for c in class_options %}
+                        <option value="{{ loop.index0 }}">{{ c.name }} ({{ c.class_type.value|title }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">Coach</label>
+                    <select class="form-select" name="manual_coach">
+                        {% for c in coach_options %}
+                        <option value="{{ loop.index0 }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">Time Slot</label>
+                    <select class="form-select" name="manual_slot">
+                        {% for s in slot_options %}
+                        <option value="{{ loop.index0 }}">{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" name="add_manual" class="btn btn-outline-primary">Add Manual Assignment</button>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" name="clear_manual" class="btn btn-outline-danger">Clear Manual Assignments</button>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Generate Schedule</button>
+                </div>
+            </div>
+        </form>
+        {% if manual_assignments and manual_assignments|length > 0 %}
+        <div class="mb-3">
+            <strong>Manual Assignments:</strong>
+            <ul>
+                {% for ma in manual_assignments %}
+                <li>{{ ma.class_name }} ({{ ma.class_type|title }}) with {{ ma.coach_name }} in {{ slot_options[ma.slot_idx] }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if schedule %}
+        <div class="mb-3">
+            <a href="{{ url_for('export_ical') }}" class="btn btn-success me-2">Export as iCalendar (.ics)</a>
+            <a href="{{ url_for('export_csv') }}" class="btn btn-secondary">Export as CSV</a>
+        </div>
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Class</th>
+                    <th>Type</th>
+                    <th>Duration</th>
+                    <th>Coach</th>
+                    <th>Fixed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sc in schedule %}
+                <tr>
+                    <td>{{ sc.day.title() }}</td>
+                    <td>{{ sc.start_time }}</td>
+                    <td>{{ sc.end_time }}</td>
+                    <td>{{ sc.class_name }}</td>
+                    <td>{{ sc.class_type|title }}</td>
+                    <td>{{ sc.duration }} min</td>
+                    <td>{{ sc.coach }}</td>
+                    <td>{% if sc.is_fixed %}<span class="badge bg-warning text-dark">Yes</span>{% endif %}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center">No classes scheduled.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if conflicts and conflicts|length > 0 %}
+        <div class="alert alert-warning mt-4">
+            <strong>Conflicts/Warnings:</strong>
+            <ul>
+                {% for c in conflicts %}
+                <li>{{ c }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        <a href="/" class="btn btn-secondary mt-3">Back to Home</a>
+    </div>
+</body>
+</html> 

@@ -3,14 +3,22 @@ from typing import List, Dict, Optional
 from datetime import time
 from .enums import ClassType, GiSubType, NoGiSubType
 
-@dataclass
+@dataclass(frozen=True)
 class TimeSlot:
     day: str  # "monday", "tuesday", etc.
     start_time: time
     end_time: time
+    primary_preference: Optional[str] = None  # e.g., 'gi', 'no-gi', 'open-mat', or None
+    secondary_preference: Optional[str] = None
     
     def __str__(self):
-        return f"{self.day.title()} {self.start_time.strftime('%H:%M')}-{self.end_time.strftime('%H:%M')}"
+        prefs = []
+        if self.primary_preference:
+            prefs.append(f"Primary: {self.primary_preference}")
+        if self.secondary_preference:
+            prefs.append(f"Secondary: {self.secondary_preference}")
+        pref_str = f" ({', '.join(prefs)})" if prefs else ""
+        return f"{self.day.title()} {self.start_time.strftime('%H:%M')}-{self.end_time.strftime('%H:%M')}{pref_str}"
 
 @dataclass
 class Coach:
@@ -22,7 +30,7 @@ class Coach:
     can_teach_nogi: bool = True
     can_teach_open_mat: bool = True
     
-@dataclass
+@dataclass(frozen=True)
 class ClassDefinition:
     name: str
     class_type: ClassType
